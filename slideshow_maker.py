@@ -1,4 +1,5 @@
 from moviepy.editor import ImageClip, VideoFileClip, concatenate_videoclips
+import random
 
 import os
 
@@ -55,6 +56,8 @@ for filename in os.listdir(video_dir):
             print("found video")
         except Exception as e:
             print(f"Error processing video file {filename}: {e}")
+
+random.shuffle(all_clips)
 
 # Concatenate all the clips
 final_clip = concatenate_videoclips(all_clips)

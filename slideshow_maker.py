@@ -9,6 +9,8 @@ import moviepy.video.compositing.transitions as transitions
 import random
 import librosa
 import os
+import numpy as np
+import cv2
 
 image_duration = 5  # Duration for each image in seconds
 video_duration = 5  # Duration for each video clip in seconds
@@ -18,6 +20,37 @@ output_filename = "slideshow.mp4"  # Output video filename
 resolution = (1280, 720)  # 720p resolution (width, height)
 audio_clip = "audio/rbnation.mp3"
 audio_duration = librosa.get_duration(filename=audio_clip)
+
+
+def Zoom(clip, mode="in", position="center", speed=1):
+    fps = clip.fps
+    duration = clip.duration
+    total_frames = int(duration * fps)
+
+    def main(getframe, t):
+        frame = getframe(t)
+        h, w = frame.shape[:2]
+        i = t * fps
+        if mode == "out":
+            i = total_frames - i
+        zoom = 1 + (i * ((0.1 * speed) / total_frames))
+        positions = {
+            "center": [(w - (w * zoom)) / 2, (h - (h * zoom)) / 2],
+            "left": [0, (h - (h * zoom)) / 2],
+            "right": [(w - (w * zoom)), (h - (h * zoom)) / 2],
+            "top": [(w - (w * zoom)) / 2, 0],
+            "topleft": [0, 0],
+            "topright": [(w - (w * zoom)), 0],
+            "bottom": [(w - (w * zoom)) / 2, (h - (h * zoom))],
+            "bottomleft": [0, (h - (h * zoom))],
+            "bottomright": [(w - (w * zoom)), (h - (h * zoom))],
+        }
+        tx, ty = positions[position]
+        M = np.array([[zoom, 0, tx], [0, zoom, ty]])
+        frame = cv2.warpAffine(frame, M, (w, h))
+        return frame
+
+    return clip.fl(main)
 
 
 def collect_clips():
@@ -39,13 +72,36 @@ def collect_clips():
             file_path = os.path.join(image_dir, filename)
             try:
                 # Create an ImageClip object from the image file
-                image = ImageClip(file_path)
+                image = ImageClip(file_path).set_fps(30)
                 # Apply the zoom effect
                 zoom_factor = 0.9  # Adjust this value to control the zoom amount
                 zoomed_image = crop(image, zoom_factor)
                 zoomed_image = zoomed_image.set_duration(image_duration)
                 # Set the start time for the clip
                 zoomed_image = zoomed_image.set_start(cumulative_duration)
+
+                random_position = random.choice(
+                    [
+                        "center",
+                        "left",
+                        "right",
+                        "top",
+                        "topleft",
+                        "topright",
+                        "bottom",
+                        "bottomleft",
+                        "bottomright",
+                    ]
+                )
+                random_speed = random.uniform(0.2, 1)
+
+                zoomed_image = Zoom(
+                    zoomed_image,
+                    mode="in",
+                    position=random_position,
+                    speed=random_speed,
+                )
+
                 # Add the clip to the list if it doesn't exceed the audio duration
                 if cumulative_duration + image_duration <= audio_duration:
                     all_clips.append(zoomed_image)
@@ -75,6 +131,7 @@ def collect_clips():
                 video = video.set_duration(video_duration)
                 # Set the start time for the clip
                 video = video.set_start(cumulative_duration)
+
                 # Add the clip to the list if it doesn't exceed the audio duration
                 if cumulative_duration + video_duration <= audio_duration:
                     all_clips.append(video)

@@ -14,7 +14,7 @@ if not os.path.exists("thumbnails"):
 
 
 params = {
-    "q": "famous quotes",
+    "q": "vertical futurstic  before:2015",
     "engine": "google_images",
     "ijn": "0",
     "api_key": api_key,
@@ -27,7 +27,7 @@ print(images_results)
 
 
 for result in images_results:
-    thumbnail_url = result["thumbnail"]
+    thumbnail_url = result["original"]
     # Extract filename from URL
     filename = thumbnail_url.split("/")[-1]
     # Construct local file path

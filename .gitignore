@@ -6,3 +6,5 @@ videos/*
 
 #IGNORE THUMBNAILS INSIDE OF THUMBNAILS FOLDER
 thumbnails/*
+
+thumbnails_test/

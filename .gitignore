@@ -6,7 +6,8 @@ videos/*
 
 #IGNORE THUMBNAILS INSIDE OF THUMBNAILS FOLDER
 thumbnails/*
+images/*
 
-thumbnails_test/
+thumbnails_test/*
 
 slideshow.mp4

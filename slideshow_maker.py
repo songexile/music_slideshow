@@ -10,12 +10,16 @@ import cv2
 image_duration = 5  # Duration for each image in seconds
 video_duration = 5  # Duration for each video clip in seconds
 
-image_dir = "images"  # Directory containing the images
-video_dir = "videos"  # Directory containing the video clips
+BANNER_ON = True  # If you user wants a banner on the slideshow
+
+
+BANNER_IMG = "banner/pcx.jpg"  # Banner image
+IMAGE_DIR = "thumbnails"  # Directory containing the images
+VIDEO_DIR = "videos"  # Directory containing the video clips
 output_filename = "slideshow.mp4"  # Output video filename
-resolution = (300, 300)  # 720p resolution exported
-audio_clip = "audio/rbnation.mp3"  # Provide audio clip
-audio_duration = librosa.get_duration(filename=audio_clip)
+resolution = (1280, 720)  # 720p resolution exported
+AUDIO_DIR = "audio/rbnation.mp3"  # Provide audio clip
+audio_duration = librosa.get_duration(filename=AUDIO_DIR)
 
 
 def Zoom(clip, mode="in", position="center", speed=1):
@@ -57,7 +61,7 @@ def collect_clips():
     cumulative_duration = 0
 
     # Loop through all files in the image directory
-    for filename in os.listdir(image_dir):
+    for filename in os.listdir(IMAGE_DIR):
         # Check if the file is an image (jpeg, jpg, or png extension)
         if (
             filename.endswith(".jpeg")
@@ -65,7 +69,7 @@ def collect_clips():
             or filename.endswith(".png")
         ):
             # Construct the full file path
-            file_path = os.path.join(image_dir, filename)
+            file_path = os.path.join(IMAGE_DIR, filename)
             try:
 
                 image = (
@@ -112,7 +116,7 @@ def collect_clips():
                 print(f"Error processing image file {filename}: {e}")
 
     # Loop through all files in the video directory
-    for filename in os.listdir(video_dir):
+    for filename in os.listdir(VIDEO_DIR):
         # Check if the file is a video (mp4, mov, or avi extension)
         if (
             filename.endswith(".mp4")
@@ -120,7 +124,7 @@ def collect_clips():
             or filename.endswith(".avi")
         ):
             # Construct the full file path
-            file_path = os.path.join(video_dir, filename)
+            file_path = os.path.join(VIDEO_DIR, filename)
             try:
                 # Create a VideoFileClip object from the video file
                 video = VideoFileClip(file_path)
@@ -146,6 +150,19 @@ def collect_clips():
 
 all_clips = collect_clips()
 
+
+## Adds a banner if the user wants
+if BANNER_ON == True:
+    banner_w = resolution[0]
+    banner_h = resolution[1] * 0.2
+    all_clips.append(
+        ImageClip(BANNER_IMG)
+        .set_duration(audio_duration - 2)
+        .set_start(0)
+        .resize(newsize=(banner_w, banner_h))
+        .set_position("bottom")
+    )
+
 # Create a CompositeVideoClip from the list of clips
 final_clip = CompositeVideoClip(all_clips)
 
@@ -153,4 +170,4 @@ final_clip = CompositeVideoClip(all_clips)
 final_clip.fps = 24
 
 # Write the final clip to a video file with the specified audio
-final_clip.write_videofile(output_filename, audio=audio_clip, codec="libx264")
+final_clip.write_videofile(output_filename, audio=AUDIO_DIR, codec="libx264")

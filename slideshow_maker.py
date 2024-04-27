@@ -1,9 +1,4 @@
-from moviepy.editor import (
-    ImageClip,
-    VideoFileClip,
-    CompositeVideoClip,
-    concatenate_videoclips,
-)
+from moviepy.editor import ImageClip, VideoFileClip, CompositeVideoClip, TextClip
 from moviepy.video.fx.all import crop
 import moviepy.video.compositing.transitions as transitions
 import random
@@ -14,11 +9,12 @@ import cv2
 
 image_duration = 5  # Duration for each image in seconds
 video_duration = 5  # Duration for each video clip in seconds
-image_dir = "thumbnails"  # Directory containing the images
+
+image_dir = "images"  # Directory containing the images
 video_dir = "videos"  # Directory containing the video clips
 output_filename = "slideshow.mp4"  # Output video filename
-resolution = (1280, 720)  # 720p resolution (width, height)
-audio_clip = "audio/rbnation.mp3"
+resolution = (300, 300)  # 720p resolution exported
+audio_clip = "audio/rbnation.mp3"  # Provide audio clip
 audio_duration = librosa.get_duration(filename=audio_clip)
 
 
@@ -71,14 +67,17 @@ def collect_clips():
             # Construct the full file path
             file_path = os.path.join(image_dir, filename)
             try:
-                # Create an ImageClip object from the image file
-                image = ImageClip(file_path).set_fps(30)
-                # Apply the zoom effect
-                zoom_factor = 0.9  # Adjust this value to control the zoom amount
-                zoomed_image = crop(image, zoom_factor)
-                zoomed_image = zoomed_image.set_duration(image_duration)
-                # Set the start time for the clip
-                zoomed_image = zoomed_image.set_start(cumulative_duration)
+
+                image = (
+                    ImageClip(file_path)
+                    .set_duration(image_duration)
+                    .resize(resolution)
+                    .set_fps(30)
+                    .crop(0.5, 0.5)
+                )
+
+                image = image.set_duration(image_duration)
+                image = image.set_start(cumulative_duration)
 
                 random_position = random.choice(
                     [
@@ -95,20 +94,20 @@ def collect_clips():
                 )
                 random_speed = random.uniform(0.2, 1)
 
-                zoomed_image = Zoom(
-                    zoomed_image,
+                image = Zoom(
+                    image,
                     mode="in",
                     position=random_position,
                     speed=random_speed,
                 )
-
                 # Add the clip to the list if it doesn't exceed the audio duration
                 if cumulative_duration + image_duration <= audio_duration:
-                    all_clips.append(zoomed_image)
+                    all_clips.append(image)
                     # Update the cumulative duration
                     cumulative_duration += image_duration
                 else:
                     break
+
             except Exception as e:
                 print(f"Error processing image file {filename}: {e}")
 
@@ -141,14 +140,14 @@ def collect_clips():
                     break
             except Exception as e:
                 print(f"Error processing video file {filename}: {e}")
-
+            random.shuffle(all_clips)
     return all_clips
 
 
 all_clips = collect_clips()
 
 # Create a CompositeVideoClip from the list of clips
-final_clip = CompositeVideoClip(clips=all_clips)
+final_clip = CompositeVideoClip(all_clips)
 
 # Set the frames per second (fps) of the final clip
 final_clip.fps = 24

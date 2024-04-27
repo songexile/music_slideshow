@@ -9,12 +9,12 @@ load_dotenv()
 api_key = os.getenv("SerpAPI")
 
 
-if not os.path.exists("thumbnails"):
-    os.makedirs("thumbnails")
+if not os.path.exists("images"):
+    os.makedirs("images")
 
 
 params = {
-    "q": "vertical futurstic  before:2015",
+    "q": "myanmar nature before:2011",
     "engine": "google_images",
     "ijn": "0",
     "api_key": api_key,

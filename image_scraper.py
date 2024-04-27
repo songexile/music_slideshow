@@ -9,12 +9,12 @@ load_dotenv()
 api_key = os.getenv("SerpAPI")
 
 
-if not os.path.exists("thumbnails"):
-    os.makedirs("thumbnails")
+if not os.path.exists("images"):
+    os.makedirs("images")
 
 
 params = {
-    "q": "famous quotes",
+    "q": "myanmar nature before:2011",
     "engine": "google_images",
     "ijn": "0",
     "api_key": api_key,
@@ -27,7 +27,7 @@ print(images_results)
 
 
 for result in images_results:
-    thumbnail_url = result["thumbnail"]
+    thumbnail_url = result["original"]
     # Extract filename from URL
     filename = thumbnail_url.split("/")[-1]
     # Construct local file path

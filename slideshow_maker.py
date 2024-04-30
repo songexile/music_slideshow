@@ -7,18 +7,18 @@ import os
 import numpy as np
 import cv2
 
-image_duration = 5  # Duration for each image in seconds
+image_duration = 0.1  # Duration for each image in seconds
 video_duration = 5  # Duration for each video clip in seconds
 
 BANNER_ON = True  # If you user wants a banner on the slideshow
 
 
-BANNER_IMG = "banner/pcx.jpg"  # Banner image
+BANNER_IMG = "banner/527.jpeg"  # Banner image
 IMAGE_DIR = "thumbnails"  # Directory containing the images
 VIDEO_DIR = "videos"  # Directory containing the video clips
 output_filename = "slideshow.mp4"  # Output video filename
 resolution = (1280, 720)  # 720p resolution exported
-AUDIO_DIR = "audio/rbnation.mp3"  # Provide audio clip
+AUDIO_DIR = "audio/127-emo-dubstep-vip-mix.mp3"  # Provide audio clip
 audio_duration = librosa.get_duration(filename=AUDIO_DIR)
 
 
@@ -98,12 +98,12 @@ def collect_clips():
                 )
                 random_speed = random.uniform(0.2, 1)
 
-                image = Zoom(
-                    image,
-                    mode="in",
-                    position=random_position,
-                    speed=random_speed,
-                )
+                # image = Zoom(
+                #     image,
+                #     mode="in",
+                #     position=random_position,
+                #     speed=random_speed,
+                # )
                 # Add the clip to the list if it doesn't exceed the audio duration
                 if cumulative_duration + image_duration <= audio_duration:
                     all_clips.append(image)

@@ -14,7 +14,7 @@ if not os.path.exists("images"):
 
 
 params = {
-    "q": "myanmar nature before:2011",
+    "q": "citynight rain asia before:2011",
     "engine": "google_images",
     "ijn": "0",
     "api_key": api_key,
@@ -29,7 +29,17 @@ print(images_results)
 for result in images_results:
     thumbnail_url = result["original"]
     # Extract filename from URL
+    max_filename_length = 50  # Set your desired maximum filename length
+
     filename = thumbnail_url.split("/")[-1]
+
+    # Check if the filename is too long
+    if len(filename) > max_filename_length:
+        # If the filename is too long, truncate it
+        filename = filename[:max_filename_length]
+
+# Now you can use the 'filename' variable
+
     # Construct local file path
     filepath = os.path.join("thumbnails", filename)
 

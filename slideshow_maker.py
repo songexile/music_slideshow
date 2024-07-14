@@ -5,6 +5,7 @@ from typing import List, Tuple
 from moviepy.editor import ImageClip, CompositeVideoClip, AudioFileClip
 from moviepy.video.fx.all import crop
 import librosa
+import cv2
 
 class SlideshowGenerator:
     def __init__(self, config: dict):
@@ -89,16 +90,18 @@ class SlideshowGenerator:
             duration = min(self.audio_duration - start_time, duration - jitter)
 
             image_file = self.image_files[image_index % len(self.image_files)]
-            self._process_image(image_file, start_time, duration)
+            result = self._process_image(image_file, start_time, duration)
+            
+            # If the image was processed successfully, move to the next beat
+            # If not (i.e., it was skipped), try the next image without advancing the beat
+            if result is not None:
+                if i % 4 == 0:
+                    bar_count = (bar_count + 1) % 8
 
             image_index += 1
             if image_index >= len(self.image_files):
                 random.shuffle(self.image_files)
                 image_index = 0
-
-            # Increment bar count every 4 beats
-            if i % 4 == 0:
-                bar_count = (bar_count + 1) % 8
 
     def _add_roll_effect(self, start_time: float, image_index: int) -> None:
         roll_duration = 1.0  # Total duration of the roll effect (adjust as needed)
@@ -114,21 +117,43 @@ class SlideshowGenerator:
         file_path = os.path.join(self.config['IMAGE_DIR'], filename)
         try:
             image = self._create_image_clip(file_path, start_time, duration)
-            self.clips.append(image)
-            print(f"Processed image: {filename} at time {start_time:.2f}, duration {duration:.2f}")
+            if image is not None:
+                self.clips.append(image)
+                print(f"Processed image: {filename} at time {start_time:.2f}, duration {duration:.2f}")
+                return True
+            else:
+                print(f"Skipped grayscale image: {filename}")
+                return None
         except Exception as e:
             print(f"Error processing image file {filename}: {e}")
+            return None
 
     def _create_image_clip(self, file_path: str, start_time: float, duration: float) -> ImageClip:
-        image = (ImageClip(file_path)
-                 .set_duration(duration)
-                 .resize(self.config['resolution'])
-                 .set_start(start_time))
+        # Read the image using OpenCV
+        image = cv2.imread(file_path)
+        
+        # Check if the image is None (file not found or couldn't be read)
+        if image is None:
+            raise ValueError(f"Could not read image file: {file_path}")
+        
+        # Check if the image is grayscale
+        if len(image.shape) == 2 or (len(image.shape) == 3 and image.shape[2] == 1):
+            print(f"Skipping grayscale image: {file_path}")
+            return None
+        
+        # Convert BGR to RGB
+        image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+        
+        # Create ImageClip from the numpy array
+        clip = (ImageClip(image)
+                .set_duration(duration)
+                .resize(self.config['resolution'])
+                .set_start(start_time))
         
         if self.config['use_zoom_effect']:
-            image = self._apply_zoom_effect(image)
+            clip = self._apply_zoom_effect(clip)
         
-        return image
+        return clip
     
     def _apply_zoom_effect(self, clip: ImageClip) -> ImageClip:
         # Implement the zoom effect here if needed
@@ -159,14 +184,14 @@ class SlideshowGenerator:
 
 # Usage with BPM specified
 config = {
-    'BPM': 127,  # Set this to None or remove it to use automatic BPM detection
+    'BPM': None,  # Set this to None or remove it to use automatic BPM detection
     'BANNER_ON': True,
-    'BANNER_IMG': "banner/527.jpeg",
-    'IMAGE_DIR': "thumbnails",
+    'BANNER_IMG': "banner/img1.jpg",
+    'IMAGE_DIR': "images1",
     'VIDEO_DIR': "videos",
     'output_filename': "exported_videos/slideshow.mp4",
     'resolution': (400, 300),
-    'AUDIO_DIR': "audio/127-emo-dubstep-vip-mix.mp3",
+    'AUDIO_DIR': "audio/2009____xnix-goon_sad-ballad.mp3",
     'use_zoom_effect': False  # Set to True if you want to use the zoom effect
 }
 

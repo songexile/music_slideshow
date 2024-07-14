@@ -13,8 +13,8 @@ video_duration = 5  # Duration for each video clip in seconds
 BANNER_ON = True  # If you user wants a banner on the slideshow
 
 
-BANNER_IMG = "banner/527.jpeg"  # Banner image
-IMAGE_DIR = "thumbnails"  # Directory containing the images
+BANNER_IMG = "banner/ha.jpg"  # Banner image
+IMAGE_DIR = "images"  # Directory containing the images
 VIDEO_DIR = "videos"  # Directory containing the video clips
 output_filename = "slideshow.mp4"  # Output video filename
 resolution = (1280, 720)  # 720p resolution exported
@@ -116,34 +116,34 @@ def collect_clips():
                 print(f"Error processing image file {filename}: {e}")
 
     # Loop through all files in the video directory
-    for filename in os.listdir(VIDEO_DIR):
-        # Check if the file is a video (mp4, mov, or avi extension)
-        if (
-            filename.endswith(".mp4")
-            or filename.endswith(".mov")
-            or filename.endswith(".avi")
-        ):
-            # Construct the full file path
-            file_path = os.path.join(VIDEO_DIR, filename)
-            try:
-                # Create a VideoFileClip object from the video file
-                video = VideoFileClip(file_path)
-                # Resize the video clip to match the desired resolution
-                video = video.resize(resolution)
-                # Set the duration of the video clip
-                video = video.set_duration(video_duration)
-                # Set the start time for the clip
-                video = video.set_start(cumulative_duration)
+    # for filename in os.listdir(VIDEO_DIR):
+    #     # Check if the file is a video (mp4, mov, or avi extension)
+    #     if (
+    #         filename.endswith(".mp4")
+    #         or filename.endswith(".mov")
+    #         or filename.endswith(".avi")
+    #     ):
+    #         # Construct the full file path
+    #         file_path = os.path.join(VIDEO_DIR, filename)
+    #         try:
+    #             # Create a VideoFileClip object from the video file
+    #             video = VideoFileClip(file_path)
+    #             # Resize the video clip to match the desired resolution
+    #             video = video.resize(resolution)
+    #             # Set the duration of the video clip
+    #             video = video.set_duration(video_duration)
+    #             # Set the start time for the clip
+    #             video = video.set_start(cumulative_duration)
 
-                # Add the clip to the list if it doesn't exceed the audio duration
-                if cumulative_duration + video_duration <= audio_duration:
-                    all_clips.append(video)
-                    # Update the cumulative duration
-                    cumulative_duration += video_duration
-                else:
-                    break
-            except Exception as e:
-                print(f"Error processing video file {filename}: {e}")
+    #             # Add the clip to the list if it doesn't exceed the audio duration
+    #             if cumulative_duration + video_duration <= audio_duration:
+    #                 all_clips.append(video)
+    #                 # Update the cumulative duration
+    #                 cumulative_duration += video_duration
+    #             else:
+    #                 break
+    #         except Exception as e:
+    #             print(f"Error processing video file {filename}: {e}")
             random.shuffle(all_clips)
     return all_clips
 

@@ -14,7 +14,7 @@ if not os.path.exists("images"):
 
 
 params = {
-    "q": "citynight rain asia before:2011",
+    "q": "rainy night snow anime    before:2013",
     "engine": "google_images",
     "ijn": "0",
     "api_key": api_key,
@@ -41,7 +41,7 @@ for result in images_results:
 # Now you can use the 'filename' variable
 
     # Construct local file path
-    filepath = os.path.join("thumbnails", filename)
+    filepath = os.path.join("images", filename)
 
     # Download thumbnail
     response = requests.get(thumbnail_url)

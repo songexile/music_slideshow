@@ -43,13 +43,50 @@ class SlideshowGenerator:
 
     def collect_clips(self) -> None:
         image_index = 0
-        for i, start_time in enumerate(self.beat_times):
-            if i + 1 < len(self.beat_times):
+        i = 0
+        bar_count = 0
+        while i < len(self.beat_times):
+            start_time = self.beat_times[i]
+            
+            # Check if we're at the end of 8 bars (32 beats assuming 4/4 time signature)
+            if bar_count == 7 and i % 4 == 3:
+                # 20% chance of adding a roll effect
+                if random.random() < 0.2:
+                    self._add_roll_effect(start_time, image_index)
+                    i += 1
+                    bar_count = 0
+                    continue
+
+            # Randomly choose a cutting style
+            cut_style = random.choices(['normal', 'double', 'half', 'long_hold'], 
+                                       weights=[0.6, 0.2, 0.15, 0.05])[0]
+            
+            if cut_style == 'normal':
+                end_time = self.beat_times[i + 1] if i + 1 < len(self.beat_times) else self.audio_duration
+                i += 1
+            elif cut_style == 'double' and i + 1 < len(self.beat_times):
+                mid_time = (self.beat_times[i] + self.beat_times[i + 1]) / 2
                 end_time = self.beat_times[i + 1]
+                self._process_image(self.image_files[image_index % len(self.image_files)], 
+                                    start_time, mid_time - start_time)
+                start_time = mid_time
+                i += 1
+            elif cut_style == 'half' and i + 2 < len(self.beat_times):
+                end_time = self.beat_times[i + 2]
+                i += 2
+            elif cut_style == 'long_hold' and i + 3 < len(self.beat_times):
+                end_time = self.beat_times[i + 3]
+                i += 3
             else:
-                end_time = self.audio_duration
+                end_time = self.beat_times[i + 1] if i + 1 < len(self.beat_times) else self.audio_duration
+                i += 1
 
             duration = end_time - start_time
+
+            # Add some randomness to the timing
+            jitter = random.uniform(-0.05, 0.05)
+            start_time = max(0, start_time + jitter)
+            duration = min(self.audio_duration - start_time, duration - jitter)
 
             image_file = self.image_files[image_index % len(self.image_files)]
             self._process_image(image_file, start_time, duration)
@@ -58,6 +95,20 @@ class SlideshowGenerator:
             if image_index >= len(self.image_files):
                 random.shuffle(self.image_files)
                 image_index = 0
+
+            # Increment bar count every 4 beats
+            if i % 4 == 0:
+                bar_count = (bar_count + 1) % 8
+
+    def _add_roll_effect(self, start_time: float, image_index: int) -> None:
+        roll_duration = 1.0  # Total duration of the roll effect (adjust as needed)
+        num_flashes = random.randint(4, 8)  # Number of image flashes in the roll
+        flash_duration = roll_duration / num_flashes
+
+        for j in range(num_flashes):
+            flash_start = start_time + (j * flash_duration)
+            image_file = self.image_files[(image_index + j) % len(self.image_files)]
+            self._process_image(image_file, flash_start, flash_duration)
 
     def _process_image(self, filename: str, start_time: float, duration: float) -> None:
         file_path = os.path.join(self.config['IMAGE_DIR'], filename)

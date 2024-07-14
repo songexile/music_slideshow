@@ -14,7 +14,7 @@ if not os.path.exists("images"):
 
 
 params = {
-    "q": "rainy night snow anime    before:2013",
+    "q": "Bangkok street scene night before:2012",
     "engine": "google_images",
     "ijn": "0",
     "api_key": api_key,

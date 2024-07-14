@@ -56,98 +56,71 @@ def Zoom(clip, mode="in", position="center", speed=1):
 def collect_clips():
     # Create a list to store all the clips (image and video)
     all_clips = []
-
     # Initialize the cumulative duration to 0
     cumulative_duration = 0
+    # Counter for the number of images processed
+    image_count = 0
 
     # Loop through all files in the image directory
     for filename in os.listdir(IMAGE_DIR):
         # Check if the file is an image (jpeg, jpg, or png extension)
-        if (
-            filename.endswith(".jpeg")
-            or filename.endswith(".jpg")
-            or filename.endswith(".png")
-        ):
+        if filename.lower().endswith(('.jpeg', '.jpg', '.png')):
             # Construct the full file path
             file_path = os.path.join(IMAGE_DIR, filename)
             try:
-
-                image = (
-                    ImageClip(file_path)
-                    .set_duration(image_duration)
-                    .resize(resolution)
-                    .set_fps(30)
-                    .crop(0.5, 0.5)
-                )
-
-                image = image.set_duration(image_duration)
+                image = ImageClip(file_path)
+                
+                # Ensure the image has 3 color channels
+                if image.img.ndim == 2:  # If it's a grayscale image
+                    image = ImageClip(np.dstack([image.img] * 3))
+                
+                image = (image
+                         .set_duration(image_duration)
+                         .resize(resolution)
+                         .set_fps(30)
+                         .crop(0.5, 0.5))
+                
                 image = image.set_start(cumulative_duration)
 
-                random_position = random.choice(
-                    [
-                        "center",
-                        "left",
-                        "right",
-                        "top",
-                        "topleft",
-                        "topright",
-                        "bottom",
-                        "bottomleft",
-                        "bottomright",
-                    ]
-                )
+                random_position = random.choice([
+                    "center", "left", "right", "top", "topleft", "topright",
+                    "bottom", "bottomleft", "bottomright"
+                ])
                 random_speed = random.uniform(0.2, 1)
 
+                # Uncomment the following lines if you want to use the Zoom effect
                 # image = Zoom(
                 #     image,
                 #     mode="in",
                 #     position=random_position,
                 #     speed=random_speed,
                 # )
+
                 # Add the clip to the list if it doesn't exceed the audio duration
                 if cumulative_duration + image_duration <= audio_duration:
                     all_clips.append(image)
                     # Update the cumulative duration
                     cumulative_duration += image_duration
+                    image_count += 1
+                    
+                    # Print information about the processed image
+                    print(f"Processed image {image_count}: {filename}")
+                    print(f"Image shape: {image.img.shape}")
+                    print(f"Image dtype: {image.img.dtype}")
+                    print("---")
+
+                    # Break after processing 5 images
+                    # if image_count >= 5:
+                    #     break
                 else:
                     break
 
             except Exception as e:
                 print(f"Error processing image file {filename}: {e}")
 
-    # Loop through all files in the video directory
-    # for filename in os.listdir(VIDEO_DIR):
-    #     # Check if the file is a video (mp4, mov, or avi extension)
-    #     if (
-    #         filename.endswith(".mp4")
-    #         or filename.endswith(".mov")
-    #         or filename.endswith(".avi")
-    #     ):
-    #         # Construct the full file path
-    #         file_path = os.path.join(VIDEO_DIR, filename)
-    #         try:
-    #             # Create a VideoFileClip object from the video file
-    #             video = VideoFileClip(file_path)
-    #             # Resize the video clip to match the desired resolution
-    #             video = video.resize(resolution)
-    #             # Set the duration of the video clip
-    #             video = video.set_duration(video_duration)
-    #             # Set the start time for the clip
-    #             video = video.set_start(cumulative_duration)
-
-    #             # Add the clip to the list if it doesn't exceed the audio duration
-    #             if cumulative_duration + video_duration <= audio_duration:
-    #                 all_clips.append(video)
-    #                 # Update the cumulative duration
-    #                 cumulative_duration += video_duration
-    #             else:
-    #                 break
-    #         except Exception as e:
-    #             print(f"Error processing video file {filename}: {e}")
-            random.shuffle(all_clips)
+    # We're not shuffling the clips for this test
+    # random.shuffle(all_clips)
     return all_clips
-
-
 all_clips = collect_clips()
 
 

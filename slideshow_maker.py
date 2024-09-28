@@ -93,25 +93,6 @@ def detect_peaks(audio_path, input_bpm=None):
 
     onset_times = librosa.frames_to_time(onset_frames, sr=sr, hop_length=hop_length)
 
-    # Plot the waveform and onset detection
-    plt.figure(figsize=(10, 6))
-    plt.subplot(2, 1, 1)
-    librosa.display.waveshow(y, sr=sr, alpha=0.6)
-    plt.vlines(onset_times, -1, 1, color='r', linestyle='--', label='Onsets')
-    plt.title(f'Waveform with Onset Detection (Delta: {tuned_delta})')
-    plt.xlabel('Time (seconds)')
-    plt.legend()
-
-    plt.subplot(2, 1, 2)
-    plt.plot(librosa.times_like(onset_env, sr=sr, hop_length=hop_length), onset_env, label='Onset strength')
-    plt.vlines(onset_times, 0, np.max(onset_env), color='r', linestyle='--', alpha=0.8, label='Onsets')
-    plt.title('Onset Envelope with Detected Onsets')
-    plt.xlabel('Time (seconds)')
-    plt.ylabel('Onset Strength')
-    plt.legend()
-
-    plt.tight_layout()
-    plt.show()
 
     return onset_times
 
@@ -158,6 +139,10 @@ def collect_clips(peak_times, audio_duration):
     peak_times = peak_times[:num_clips]
     clip_durations = np.diff(np.append(peak_times, audio_duration))
 
+    # Calculate the duration for every 8 bars
+    seconds_per_beat = 60 / INPUT_BPM
+    bars_duration = 8 * seconds_per_beat * 4  # Duration of 8 bars assuming 4 beats per bar
+
     for idx, file_path in enumerate(all_files[:num_clips]):
         try:
             extension = os.path.splitext(file_path)[1].lower()
@@ -169,12 +154,16 @@ def collect_clips(peak_times, audio_duration):
                     .set_duration(duration)
                     .resize(RESOLUTION)
                 )
-                clip = zoom_effect(
-                    clip,
-                    mode=random.choice(["in", "out"]),
-                    position="center",
-                    speed=0.5,
-                )
+                
+                # Apply zoom effect only if the clip falls at the end of an 8-bar segment
+                if int(start_time // bars_duration) % 2 == 0:  # Apply zoom every other 8 bars for variety
+                    clip = zoom_effect(
+                        clip,
+                        mode=random.choice(["in", "out"]),
+                        position="center",
+                        speed=0.5,
+                    )
+
                 clip = clip.set_start(start_time)
                 clip = clip.set_fps(FPS)
                 clip = clip.set_position("center")
@@ -192,7 +181,9 @@ def collect_clips(peak_times, audio_duration):
         except Exception as e:
             print(f"Error processing file {file_path}: {e}")
             continue
+
     return all_clips
+
 
 def create_banner_clip(duration):
     if BANNER_ON and os.path.exists(BANNER_IMG):

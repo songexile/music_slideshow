@@ -1,173 +1,116 @@
-from moviepy.editor import ImageClip, VideoFileClip, CompositeVideoClip, TextClip
-from moviepy.video.fx.all import crop
-import moviepy.video.compositing.transitions as transitions
-import random
-import librosa
+from moviepy.editor import ImageClip, concatenate_videoclips
 import os
+import argparse
+from glob import glob
 import numpy as np
-import cv2
+from PIL import Image
+from tqdm import tqdm
+import multiprocessing
+from functools import partial
+import concurrent.futures
 
-image_duration = 0.1  # Duration for each image in seconds
-video_duration = 5  # Duration for each video clip in seconds
+def parse_arguments():
+    """Parse command line arguments."""
+    parser = argparse.ArgumentParser(description='Create a video from a series of images.')
+    parser.add_argument('--image_dir', default='ibiza', help='Directory containing the images')
+    parser.add_argument('--output', default='ibiza.mp4', help='Output video filename')
+    parser.add_argument('--width', type=int, default=1080, help='Output video width')
+    parser.add_argument('--height', type=int, default=1920, help='Output video height')
+    parser.add_argument('--fps', type=int, default=24, help='Frames per second')
+    parser.add_argument('--duration', type=float, default=0.1, help='Duration for each image (seconds)')
+    parser.add_argument('--batch_size', type=int, default=100, help='Number of images to process in each batch')
+    parser.add_argument('--threads', type=int, default=multiprocessing.cpu_count(), help='Number of processing threads')
+    return parser.parse_args()
 
-BANNER_ON = True  # If you user wants a banner on the slideshow
+def find_image_files(directory):
+    """Find all image files in the specified directory."""
+    image_extensions = ('*.jpeg', '*.jpg', '*.png', '*.bmp', '*.gif')
+    image_files = []
+    for ext in image_extensions:
+        image_files.extend(glob(os.path.join(directory, ext)))
+    
+    return sorted(image_files)
 
+def process_image(file_path, resolution, duration):
+    """Process a single image file and return a clip."""
+    try:
+        # Open image and convert to RGB
+        with Image.open(file_path) as img:
+            img = img.convert('RGB')
+            
+            # Check if resizing is needed to avoid unnecessary operations
+            if (img.width, img.height) != resolution:
+                img = img.resize(resolution, Image.LANCZOS)
+            
+            # Convert to numpy array
+            img_array = np.array(img)
+            
+            # Create the clip
+            clip = ImageClip(img_array).set_duration(duration)
+            return clip
+    except Exception as e:
+        print(f"Error processing file {file_path}: {e}")
+        return None
 
-BANNER_IMG = "banner/527.jpeg"  # Banner image
-IMAGE_DIR = "thumbnails"  # Directory containing the images
-VIDEO_DIR = "videos"  # Directory containing the video clips
-output_filename = "slideshow.mp4"  # Output video filename
-resolution = (1280, 720)  # 720p resolution exported
-AUDIO_DIR = "audio/127-emo-dubstep-vip-mix.mp3"  # Provide audio clip
-audio_duration = librosa.get_duration(filename=AUDIO_DIR)
+def process_image_batch(image_files, resolution, duration, threads):
+    """Process a batch of images in parallel."""
+    processor = partial(process_image, resolution=resolution, duration=duration)
+    
+    clips = []
+    with concurrent.futures.ThreadPoolExecutor(max_workers=threads) as executor:
+        for clip in tqdm(
+            executor.map(processor, image_files),
+            total=len(image_files),
+            desc="Processing images"
+        ):
+            if clip is not None:
+                clips.append(clip)
+    
+    return clips
 
-
-def Zoom(clip, mode="in", position="center", speed=1):
-    fps = clip.fps
-    duration = clip.duration
-    total_frames = int(duration * fps)
-
-    def main(getframe, t):
-        frame = getframe(t)
-        h, w = frame.shape[:2]
-        i = t * fps
-        if mode == "out":
-            i = total_frames - i
-        zoom = 1 + (i * ((0.1 * speed) / total_frames))
-        positions = {
-            "center": [(w - (w * zoom)) / 2, (h - (h * zoom)) / 2],
-            "left": [0, (h - (h * zoom)) / 2],
-            "right": [(w - (w * zoom)), (h - (h * zoom)) / 2],
-            "top": [(w - (w * zoom)) / 2, 0],
-            "topleft": [0, 0],
-            "topright": [(w - (w * zoom)), 0],
-            "bottom": [(w - (w * zoom)) / 2, (h - (h * zoom))],
-            "bottomleft": [0, (h - (h * zoom))],
-            "bottomright": [(w - (w * zoom)), (h - (h * zoom))],
-        }
-        tx, ty = positions[position]
-        M = np.array([[zoom, 0, tx], [0, zoom, ty]])
-        frame = cv2.warpAffine(frame, M, (w, h))
-        return frame
-
-    return clip.fl(main)
-
-
-def collect_clips():
-    # Create a list to store all the clips (image and video)
+def main():
+    args = parse_arguments()
+    
+    # Create resolution tuple from width and height
+    resolution = (args.width, args.height)
+    
+    print(f"Looking for images in {args.image_dir}...")
+    image_files = find_image_files(args.image_dir)
+    
+    if not image_files:
+        raise Exception(f"No image files found in the directory: {args.image_dir}")
+    
+    print(f"Found {len(image_files)} images")
+    
+    # Process images in batches to avoid memory issues
     all_clips = []
-
-    # Initialize the cumulative duration to 0
-    cumulative_duration = 0
-
-    # Loop through all files in the image directory
-    for filename in os.listdir(IMAGE_DIR):
-        # Check if the file is an image (jpeg, jpg, or png extension)
-        if (
-            filename.endswith(".jpeg")
-            or filename.endswith(".jpg")
-            or filename.endswith(".png")
-        ):
-            # Construct the full file path
-            file_path = os.path.join(IMAGE_DIR, filename)
-            try:
-
-                image = (
-                    ImageClip(file_path)
-                    .set_duration(image_duration)
-                    .resize(resolution)
-                    .set_fps(30)
-                    .crop(0.5, 0.5)
-                )
-
-                image = image.set_duration(image_duration)
-                image = image.set_start(cumulative_duration)
-
-                random_position = random.choice(
-                    [
-                        "center",
-                        "left",
-                        "right",
-                        "top",
-                        "topleft",
-                        "topright",
-                        "bottom",
-                        "bottomleft",
-                        "bottomright",
-                    ]
-                )
-                random_speed = random.uniform(0.2, 1)
-
-                # image = Zoom(
-                #     image,
-                #     mode="in",
-                #     position=random_position,
-                #     speed=random_speed,
-                # )
-                # Add the clip to the list if it doesn't exceed the audio duration
-                if cumulative_duration + image_duration <= audio_duration:
-                    all_clips.append(image)
-                    # Update the cumulative duration
-                    cumulative_duration += image_duration
-                else:
-                    break
-
-            except Exception as e:
-                print(f"Error processing image file {filename}: {e}")
-
-    # Loop through all files in the video directory
-    for filename in os.listdir(VIDEO_DIR):
-        # Check if the file is a video (mp4, mov, or avi extension)
-        if (
-            filename.endswith(".mp4")
-            or filename.endswith(".mov")
-            or filename.endswith(".avi")
-        ):
-            # Construct the full file path
-            file_path = os.path.join(VIDEO_DIR, filename)
-            try:
-                # Create a VideoFileClip object from the video file
-                video = VideoFileClip(file_path)
-                # Resize the video clip to match the desired resolution
-                video = video.resize(resolution)
-                # Set the duration of the video clip
-                video = video.set_duration(video_duration)
-                # Set the start time for the clip
-                video = video.set_start(cumulative_duration)
-
-                # Add the clip to the list if it doesn't exceed the audio duration
-                if cumulative_duration + video_duration <= audio_duration:
-                    all_clips.append(video)
-                    # Update the cumulative duration
-                    cumulative_duration += video_duration
-                else:
-                    break
-            except Exception as e:
-                print(f"Error processing video file {filename}: {e}")
-            random.shuffle(all_clips)
-    return all_clips
-
-
-all_clips = collect_clips()
-
-
-## Adds a banner if the user wants
-if BANNER_ON == True:
-    banner_w = resolution[0]
-    banner_h = resolution[1] * 0.2
-    all_clips.append(
-        ImageClip(BANNER_IMG)
-        .set_duration(audio_duration - 2)
-        .set_start(0)
-        .resize(newsize=(banner_w, banner_h))
-        .set_position("bottom")
+    total_batches = (len(image_files) + args.batch_size - 1) // args.batch_size
+    
+    for i in range(0, len(image_files), args.batch_size):
+        print(f"Processing batch {(i//args.batch_size)+1} of {total_batches}")
+        batch = image_files[i:i + args.batch_size]
+        batch_clips = process_image_batch(batch, resolution, args.duration, args.threads)
+        all_clips.extend(batch_clips)
+    
+    if not all_clips:
+        raise Exception("No clips were successfully processed. Please check your images.")
+    
+    print("Concatenating clips and creating video...")
+    final_clip = concatenate_videoclips(all_clips, method="compose")
+    final_clip = final_clip.set_fps(args.fps)
+    
+    print(f"Rendering video to {args.output}...")
+    final_clip.write_videofile(
+        args.output,
+        codec="libx264",
+        audio_codec="aac",
+        temp_audiofile="temp-audio.m4a",
+        remove_temp=True,
+        threads=args.threads,
+        logger="bar"  # Show progress bar
     )
+    
+    print(f"Video successfully created: {args.output}")
 
-# Create a CompositeVideoClip from the list of clips
-final_clip = CompositeVideoClip(all_clips)
-
-# Set the frames per second (fps) of the final clip
-final_clip.fps = 24
-
-# Write the final clip to a video file with the specified audio
-final_clip.write_videofile(output_filename, audio=AUDIO_DIR, codec="libx264")
+if __name__ == "__main__":
+    main()

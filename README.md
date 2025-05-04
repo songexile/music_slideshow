@@ -1,12 +1,30 @@
-# Image Downloader using SerpAPI
+# Music Slideshow
 
-This is a simple program that utilizes SerpAPI to download images from Google Images based on a given query.
+A tool to create visuals and music visualizers for songs and other multimedia projects.
 
-## Usage
+## Features
 
-In `image_downloader`, you can modify the query to specify which images the program should download.
-For this we work you need to create a .env file and create a enviornment key for SerpAPI
+- Create dynamic music visualizers that sync with your audio
+- Automatic image scraping capabilities to find relevant visuals
+- Easy-to-use slideshow maker for music videos
+- Customizable visual effects and transitions
 
-## Slideshow Maker
+## Getting Started
 
-Additionally, the program includes `slideshow_maker`, which generates a slideshow-like video.
+### Prerequisites
+
+- Python 3.7 or higher
+- Required Python packages (see Installation)
+- A SerpAPI key for the image scraping functionality
+
+### Installation
+
+1. Clone the repository:
+```bash
+git clone https://github.com/songexile/music_slideshow.git
+cd music_slideshow
+
+Add your SerpAPI key to the .env file:
+
+python image_scraper/image_downloader_app.py
+python slideshow_maker.py

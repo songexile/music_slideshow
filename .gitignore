@@ -1,15 +1,18 @@
 #IGNORE ENVIORMENT VARIABLES
 .env
 
-#IGNORE FILES INSIDE OF VIDEOS FOLDER
-videos/*
-audio/*
+# Ignore contents of these folders, but keep the folders
+exported_videos/*
+!exported_videos/.gitkeep
 
-#IGNORE THUMBNAILS INSIDE OF THUMBNAILS FOLDER
-thumbnails/*
-images/*
+media/images/*
+!media/images/.gitkeep
+
+media/video/*
+!media/video/.gitkeep
+
 banner/*
-thumbnails_test/*
+!banner/.gitkeep
 
-
-slideshow.mp4
+audio/*
+!audio/.gitkeep

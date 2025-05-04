@@ -112,6 +112,7 @@ class ImageDownloaderApp:
             download_results = self.downloader.download_images(results)
             successful = sum(1 for r in download_results if r.startswith("Downloaded"))
             messagebox.showinfo("Done", f"Download complete! Successfully downloaded {successful} images.")
+            print("Finished Download") 
         except Exception as e:
             messagebox.showerror("Error", f"An error occurred: {str(e)}")
         

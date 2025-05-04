@@ -1,6 +1,5 @@
 import tkinter as tk
 from tkinter import messagebox, filedialog
-from numpy import number
 from serpapi import GoogleSearch
 import requests
 import os
@@ -27,12 +26,12 @@ class ImageSearcher:
             }
             search = GoogleSearch(params)
             results = search.get_dict()
-            return [number(img) for img in results.get("images_results", [])]
+            return [ImageResult(img) for img in results.get("images_results", [])]
         except Exception as e:
             print(f"Error fetching: {e}")
             return []
             
-    def search_multiple_pages(self, query: str, max_pages: int = 1) -> List[number]:
+    def search_multiple_pages(self, query: str, max_pages: int = 1) -> List[ImageResult]:
         """Search for images across multiple pages"""
         all_images = []
         for page in range(max_pages):
